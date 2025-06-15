@@ -56,12 +56,16 @@ int main(int c, char** argv) {
     fgets(bufferProcessos, BUFFER_SIZE, entrada);
     fgets(bufferProcessos, BUFFER_SIZE, entrada);
     
+
+    // Lendo os processos de entrada
     int cont = 0;
     while (cont < MAX_PROCESSOS && fgets(bufferProcessos, BUFFER_SIZE, entrada)) {
         entradaProcessos[cont] = parseProcessos(bufferProcessos);
         cont++;    
     }
 
+
+    // Loop principal
     int indice = 0;
     while (indice < cont ||
            !vazioFila(baixaPrioridade) ||
@@ -91,16 +95,20 @@ int main(int c, char** argv) {
 
 
 
-        // 3) Executar / pré-emptar / bloquear o processo atual
-        // Checando o processo que sofreu preempção / finalizou
-        // Checar se precisa ir para IO aqui
-        if (processoEmExecucao) {
-            processoEmExecucao->status = PRONTO;
-            enqueue(&baixaPrioridade, *processoEmExecucao);
+            
+        // Processo finalizado
+        if (processoEmExecucao->tempoServico == 0) {
+            processoEmExecucao = NULL; // Adicionar algo mais?
         }
         
+        // Executando o proximo processo
         processoEmExecucao = getProximoProcesso(&baixaPrioridade, &altaPrioridade);
         if (processoEmExecucao) {
+            // Processo bloqueado 
+            // if (Tempo de bloqueio == tempo)
+            // manda pra fila de IOs
+
+            // else
             processoEmExecucao->status = EXECUTANDO;
             processoEmExecucao->tempoServico -= quantum;
         }

@@ -4,8 +4,18 @@
 #include "types.h"
 #include "parsing.h"
 
-#define QUANTUM_TEMPO 2
+#define QUANTUM_TEMPO 1
 const char* stringsIO[] = { "DISCO", "FITA", "IMPRESSORA" };
+
+
+int getTempoDeChegada(processo* listaProcessos, int tam, int pos) {
+    if (pos >= tam) {
+        perror("Erro de index");
+        exit(1);
+    }
+
+    return listaProcessos[pos].tempoDeChegada;
+}
 
 
 int main(int c, char** argv) {
@@ -17,7 +27,6 @@ int main(int c, char** argv) {
     processo entradaProcessos[MAX_PROCESSOS];
     char bufferProcessos[BUFFER_SIZE];
     char* arquivoEntrada = "processos_entrada.csv";
-    bool maisEntrada = true;
     
     FILE* entrada = fopen(arquivoEntrada, "r");
     if (!entrada) {
@@ -27,7 +36,7 @@ int main(int c, char** argv) {
 
     inicializaFila(&altaPrioridade);
     inicializaFila(&baixaPrioridade);
-    inicializaFila(&IOs);
+    inicializaFila(&IOs);       
 
     // Pulando o cabeçalho
     fgets(bufferProcessos, BUFFER_SIZE, entrada);
@@ -40,39 +49,39 @@ int main(int c, char** argv) {
     }
 
     int indice = 0;
-    while (maisEntrada ||
+    while (indice < cont ||
            !vazioFila(baixaPrioridade) ||
            !vazioFila(altaPrioridade) ||
            !vazioFila(IOs)) {
 
         
-        if (maisEntrada) {
-            // Checar o tempo de chegada dos processos do topo, para criar o processo no tempo certo
+        // Ainda há processo a serem criados
+        bool processoCriado = true;
+        while (processoCriado) {
+            processoCriado = false;
             if (indice < cont) {
-                PCB novoProcesso = criandoProcesso(entradaProcessos[indice]);
-                
-                printf("PID: %d ", novoProcesso.PID);
-                for (int i = 0; i < novoProcesso.contIOs; i++) {
-                    printf("%s ", stringsIO[novoProcesso.tiposIOs[i]]);
+                if (tempo >= getTempoDeChegada(entradaProcessos, cont, indice)) {
+                    PCB novoProcesso = criandoProcesso(entradaProcessos[indice]);                 
+                    printf("PCB criado no instante: %ds\n", tempo);    
+                    //enqueue(&altaPrioridade, novoProcesso);
+                    indice++;
+                    processoCriado = true;
                 }
-                printf("\n");
-                
-                //enqueue(&altaPrioridade, novoProcesso);
-                indice++;
-            }
-
-            else {
-                // fgets retornou NULL ou EOF
-                maisEntrada = false;
             }
         }
 
+
+    
         // 2) Verificar retornos de I/O
 
         // 3) Executar / pré-emptar / bloquear o processo atual
 
         // Incrementar o tempo
         tempo += quantum;
+
+        if (tempo > 20) {
+            break;
+        }
     }
 
     fclose(entrada);

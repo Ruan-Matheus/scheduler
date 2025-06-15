@@ -1,0 +1,16 @@
+
+// Criar a função que le uma ou mais linhas do arquivo de entrada
+
+// Começando pela unidade de tempo 0.
+// Loop principal de execução do escalonador
+// Em uma iteração de tempo temos que processar nessa ordem
+
+// Leremos a entrada. Se tiver processo, criaremos seu PCB, com todos os atributos e adicionamos na fila de alta prioridade.
+
+// Verificamos se algum processo retorna de IO. (Alguma estrutura de dados para olhar (mais de uma vez se necessario) o min de tempo? Heap minimo? Ou lista ordenada)
+
+// Se algum processo ainda estiver em execução (Como medir quando um processo sofreu preempção? Usando uma flag no escalonador?), esse processo volta para a fila de alta prioridade.
+
+// Agora podemos olhar o topo da fila de alta prioridade para retirar o processo, alterar seu status, tempo de serviço, até sofrer preempção, IO, ou finalizar.
+
+// Verificamos se as filas estão vazias, depois a lista de entrada, se sim, fim do programa.

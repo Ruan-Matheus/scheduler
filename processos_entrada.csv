@@ -1,0 +1,7 @@
+Processo, Tempo de serviço, Tempo de chegada, Instante de tempo para E/S, Tipo de operação de E/S
+
+1, 13, 0, 4, A
+2, 11, 4, 2 6, B A
+3, 7, 5, , 
+4, 8, 7, , 
+5, 16, 10, 2 7, A B 

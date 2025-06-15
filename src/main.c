@@ -8,7 +8,7 @@
 const char* stringsIO[] = { "DISCO", "FITA", "IMPRESSORA" };
 
 
-int getTempoDeChegada(processo* listaProcessos, int tam, int pos) {
+int getTempoDeChegada(ProcessDescriptor* listaProcessos, int tam, int pos) {
     if (pos >= tam) {
         perror("Erro de index");
         exit(1);
@@ -17,16 +17,29 @@ int getTempoDeChegada(processo* listaProcessos, int tam, int pos) {
     return listaProcessos[pos].tempoDeChegada;
 }
 
+PCB* getProximoProcesso(FILA* altaPrioridade, FILA* baixaPrioridade) {
+    if (!vazioFila(*altaPrioridade)) {
+        return dequeue(altaPrioridade);
+    }
+
+    if (!vazioFila(*baixaPrioridade)) {
+        return dequeue(baixaPrioridade);
+    }
+
+    return NULL;
+}
+
 
 int main(int c, char** argv) {
+    int tempo = 0;
+    int quantum = QUANTUM_TEMPO;
+    char bufferProcessos[BUFFER_SIZE];
+    char* arquivoEntrada = "processos_entrada.csv";
     FILA baixaPrioridade;
     FILA altaPrioridade;
     FILA IOs;
-    int quantum = QUANTUM_TEMPO;
-    int tempo = 0;
-    processo entradaProcessos[MAX_PROCESSOS];
-    char bufferProcessos[BUFFER_SIZE];
-    char* arquivoEntrada = "processos_entrada.csv";
+    ProcessDescriptor entradaProcessos[MAX_PROCESSOS];
+    PCB* processoEmExecucao = NULL;
     
     FILE* entrada = fopen(arquivoEntrada, "r");
     if (!entrada) {
@@ -37,6 +50,7 @@ int main(int c, char** argv) {
     inicializaFila(&altaPrioridade);
     inicializaFila(&baixaPrioridade);
     inicializaFila(&IOs);       
+    processoEmExecucao = malloc(sizeof(PCB));
 
     // Pulando o cabeçalho
     fgets(bufferProcessos, BUFFER_SIZE, entrada);
@@ -74,7 +88,22 @@ int main(int c, char** argv) {
     
         // 2) Verificar retornos de I/O
 
+
+
+
         // 3) Executar / pré-emptar / bloquear o processo atual
+        // Checando o processo que sofreu preempção / finalizou
+        // Checar se precisa ir para IO aqui
+        if (processoEmExecucao) {
+            processoEmExecucao->status = PRONTO;
+            enqueue(&baixaPrioridade, *processoEmExecucao);
+        }
+        
+        processoEmExecucao = getProximoProcesso(&baixaPrioridade, &altaPrioridade);
+        if (processoEmExecucao) {
+            processoEmExecucao->status = EXECUTANDO;
+            processoEmExecucao->tempoServico -= quantum;
+        }
 
         // Incrementar o tempo
         tempo += quantum;

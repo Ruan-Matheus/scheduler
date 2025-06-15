@@ -6,8 +6,8 @@
 int pid_counter = 1;
 int ppid_counter = 0;
 
-processo parseProcessos(char* buffer) {
-    processo novo;
+ProcessDescriptor parseProcessos(char* buffer) {
+    ProcessDescriptor novo;
     char *token, *saveptr1;    
     char *split;
 
@@ -58,7 +58,7 @@ processo parseProcessos(char* buffer) {
 }
 
 
-PCB criandoProcesso(processo process) {
+PCB criandoProcesso(ProcessDescriptor process) {
     PCB p;
     p.PPID = ppid_counter++;
     p.PID = pid_counter++;

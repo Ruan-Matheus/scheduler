@@ -36,7 +36,7 @@ typedef struct {
     int contIOs;
     int tempoDeIO[MAX_PROCESSOS];
     IO tiposDeIO[MAX_PROCESSOS];
-} processo;
+} ProcessDescriptor;
 
 
 typedef struct {

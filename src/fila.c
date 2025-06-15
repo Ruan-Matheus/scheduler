@@ -60,16 +60,16 @@ bool enqueue(FILA *f, TIPOCHAVE chave) {
 }
 
 
-bool dequeue(FILA *f, TIPOCHAVE* chave) {
+TIPOCHAVE* dequeue(FILA *f) {
     if (tamanhoFila(*f) == 0) {
-        return false;
+        return NULL;
     }
 
-    *chave = f->INICIO->chave;
+    TIPOCHAVE* topo = &f->INICIO->chave;
     NO* clean = f->INICIO;
     f->INICIO = f->INICIO->prox;
     free(clean);
-    return true;
+    return topo;
 }
 
 

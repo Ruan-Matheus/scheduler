@@ -81,7 +81,7 @@ int main(int c, char** argv) {
                 if (tempo >= getTempoDeChegada(entradaProcessos, cont, indice)) {
                     PCB novoProcesso = criandoProcesso(entradaProcessos[indice]);                 
                     printf("PCB criado no instante: %ds\n", tempo);    
-                    //enqueue(&altaPrioridade, novoProcesso);
+                    enqueue(&altaPrioridade, novoProcesso);
                     indice++;
                     processoCriado = true;
                 }
@@ -89,34 +89,32 @@ int main(int c, char** argv) {
         }
 
 
-    
         // 2) Verificar retornos de I/O
-
-
-
 
             
         // Processo finalizado
-        if (processoEmExecucao->tempoServico == 0) {
+        if (processoEmExecucao && processoEmExecucao->tempoServico == 0) {
+            printf("Processo p%d terminado no instante: %d\n", processoEmExecucao->PID, tempo);
             processoEmExecucao = NULL; // Adicionar algo mais?
         }
         
         // Executando o proximo processo
-        processoEmExecucao = getProximoProcesso(&baixaPrioridade, &altaPrioridade);
+        processoEmExecucao = getProximoProcesso(&altaPrioridade, &baixaPrioridade);
         if (processoEmExecucao) {
             // Processo bloqueado 
             // if (Tempo de bloqueio == tempo)
             // manda pra fila de IOs
-
+            printf("PID: %d  ---- Tempo de servico: %d\n", processoEmExecucao->PID, processoEmExecucao->tempoServico);
             // else
             processoEmExecucao->status = EXECUTANDO;
             processoEmExecucao->tempoServico -= quantum;
+            printf("PID: %d  ---- Tempo de servico: %d\n", processoEmExecucao->PID, processoEmExecucao->tempoServico);
         }
 
         // Incrementar o tempo
         tempo += quantum;
 
-        if (tempo > 20) {
+        if (tempo > 100) {
             break;
         }
     }

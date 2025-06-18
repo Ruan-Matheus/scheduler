@@ -18,7 +18,7 @@ void printFila(FILA f);
 int tamanhoFila(FILA f);
 bool vazioFila(FILA f);
 bool enqueue(FILA *f, TIPOCHAVE chave);
-TIPOCHAVE* dequeue(FILA *f);
+bool dequeue(FILA *f, TIPOCHAVE* chave);
 
 
 #endif

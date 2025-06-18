@@ -28,13 +28,13 @@ bool vazioFila(FILA f) {
 }
 
 
-// Check how to do this
 void printFila(FILA f) {
     NO* current = f.INICIO;
     while (current) {
-        //printf("%d ", current->chave);
+        printf("PID: %d --- Tempo de servico: %d \n", current->chave.PID, current->chave.tempoServico);
         current = current->prox;
     }
+    printf("\n");
 }
 
 
@@ -60,16 +60,21 @@ bool enqueue(FILA *f, TIPOCHAVE chave) {
 }
 
 
-TIPOCHAVE* dequeue(FILA *f) {
+bool dequeue(FILA* f, TIPOCHAVE* chave) {
     if (tamanhoFila(*f) == 0) {
-        return NULL;
+        return false;
     }
 
-    TIPOCHAVE* topo = &f->INICIO->chave;
-    NO* clean = f->INICIO;
+    NO* temp = f->INICIO;
+    *chave =  temp->chave;
     f->INICIO = f->INICIO->prox;
-    free(clean);
-    return topo;
+    
+    if (f->INICIO == NULL) {
+        f->FIM = NULL;
+    }
+
+    free(temp);
+    return true;
 }
 
 

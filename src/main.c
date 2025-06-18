@@ -5,7 +5,7 @@
 #include "parsing.h"
 
 #define QUANTUM_TEMPO 1
-const char* stringsIO[] = { "DISCO", "FITA", "IMPRESSORA" };
+const char* stringsIO[] = {"DISCO", "FITA", "IMPRESSORA"};
 
 
 int getTempoDeChegada(ProcessDescriptor* listaProcessos, int tam, int pos) {
@@ -18,14 +18,21 @@ int getTempoDeChegada(ProcessDescriptor* listaProcessos, int tam, int pos) {
 }
 
 PCB* getProximoProcesso(FILA* altaPrioridade, FILA* baixaPrioridade) {
-    if (!vazioFila(*altaPrioridade)) {
-        return dequeue(altaPrioridade);
+    PCB* processo = malloc(sizeof(PCB));
+    if (!processo) {
+        perror("Erro alocando memoria para o processo");
+        exit(1);
     }
 
-    if (!vazioFila(*baixaPrioridade)) {
-        return dequeue(baixaPrioridade);
+    if (dequeue(altaPrioridade, processo)) {
+        return processo;
     }
 
+    if (dequeue(baixaPrioridade, processo)) {
+        return processo;
+    }
+
+    free(processo);
     return NULL;
 }
 
@@ -50,7 +57,6 @@ int main(int c, char** argv) {
     inicializaFila(&altaPrioridade);
     inicializaFila(&baixaPrioridade);
     inicializaFila(&IOs);       
-    processoEmExecucao = malloc(sizeof(PCB));
 
     // Pulando o cabeçalho
     fgets(bufferProcessos, BUFFER_SIZE, entrada);
@@ -67,20 +73,21 @@ int main(int c, char** argv) {
 
     // Loop principal
     int indice = 0;
-    while (indice < cont ||
+    while (processoEmExecucao ||
+           indice < cont ||
            !vazioFila(baixaPrioridade) ||
            !vazioFila(altaPrioridade) ||
            !vazioFila(IOs)) {
 
         
-        // Ainda há processo a serem criados
+        // 1) Ainda há processo a serem criados
         bool processoCriado = true;
         while (processoCriado) {
             processoCriado = false;
             if (indice < cont) {
                 if (tempo >= getTempoDeChegada(entradaProcessos, cont, indice)) {
                     PCB novoProcesso = criandoProcesso(entradaProcessos[indice]);                 
-                    printf("PCB criado no instante: %ds\n", tempo);    
+                    printf("Processo p%d criado no instante: %d\n", novoProcesso.PID, tempo);    
                     enqueue(&altaPrioridade, novoProcesso);
                     indice++;
                     processoCriado = true;
@@ -88,15 +95,22 @@ int main(int c, char** argv) {
             }
         }
 
+        // Processo finalizado
+        if (processoEmExecucao && processoEmExecucao->tempoServico <= 0) {
+            printf("Processo p%d terminado no instante: %d\n", processoEmExecucao->PID, tempo);
+            free(processoEmExecucao);
+            processoEmExecucao = NULL; // Adicionar algo mais? Aqui que eu devo dar free no no de PCB?
+        }
 
         // 2) Verificar retornos de I/O
 
-            
-        // Processo finalizado
-        if (processoEmExecucao && processoEmExecucao->tempoServico == 0) {
-            printf("Processo p%d terminado no instante: %d\n", processoEmExecucao->PID, tempo);
-            processoEmExecucao = NULL; // Adicionar algo mais?
+
+        // 3) Retornar processo executado para a fila de baixa prioridade - Preempcao
+        if (processoEmExecucao) {
+            processoEmExecucao->status = PRONTO;
+            enqueue(&baixaPrioridade, *processoEmExecucao);
         }
+
         
         // Executando o proximo processo
         processoEmExecucao = getProximoProcesso(&altaPrioridade, &baixaPrioridade);
@@ -104,19 +118,14 @@ int main(int c, char** argv) {
             // Processo bloqueado 
             // if (Tempo de bloqueio == tempo)
             // manda pra fila de IOs
-            printf("PID: %d  ---- Tempo de servico: %d\n", processoEmExecucao->PID, processoEmExecucao->tempoServico);
             // else
             processoEmExecucao->status = EXECUTANDO;
             processoEmExecucao->tempoServico -= quantum;
-            printf("PID: %d  ---- Tempo de servico: %d\n", processoEmExecucao->PID, processoEmExecucao->tempoServico);
+            printf("Processo p%d executado no instante: %d --- Tempo de servico: %d\n", processoEmExecucao->PID, tempo, processoEmExecucao->tempoServico);
         }
 
         // Incrementar o tempo
         tempo += quantum;
-
-        if (tempo > 100) {
-            break;
-        }
     }
 
     fclose(entrada);

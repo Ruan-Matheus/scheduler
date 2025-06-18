@@ -14,3 +14,9 @@
 // Agora podemos olhar o topo da fila de alta prioridade para retirar o processo, alterar seu status, tempo de serviço, até sofrer preempção, IO, ou finalizar.
 
 // Verificamos se as filas estão vazias, depois a lista de entrada, se sim, fim do programa.
+
+// Cor diferentes para difentes prints
+
+// Poderia ser interessante contar o numero de trocas de contexto durante a execucao dos processos
+
+// Funcao de esvaziar fila no final.

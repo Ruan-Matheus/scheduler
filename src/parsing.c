@@ -63,6 +63,8 @@ PCB criandoProcesso(ProcessDescriptor process) {
     p.tempoChegada = process.tempoDeChegada;
     p.tempoServico = process.tempoDeServico;
     p.contIOs = process.contIOs;
+    p.tempoDeRetornoIO = 0;
+    p.proxIO = 0;
 
     for (int i = 0; i < process.contIOs; i++) {
         p.tiposIOs[i] = process.tiposDeIO[i];

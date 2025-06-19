@@ -6,6 +6,7 @@
 
 #define QUANTUM_TEMPO 1
 const char* stringsIO[] = {"DISCO", "FITA", "IMPRESSORA"};
+const int temposParaTiposIO[] = {3, 5, 2};
 
 
 int getTempoDeChegada(ProcessDescriptor* listaProcessos, int tam, int pos) {
@@ -102,8 +103,24 @@ int main(int c, char** argv) {
             processoEmExecucao = NULL; // Adicionar algo mais? Aqui que eu devo dar free no no de PCB?
         }
 
-        // 2) Verificar retornos de I/O
 
+        // 2) Verificar retornos de I/O 
+        int n = tamanhoFila(IOs);
+        for (int i = 0; i < n; i++) {
+            PCB p;
+            dequeue(&IOs, &p);
+            printf("Tamanho da fila de IOs: %d\n", n);
+            if (p.tempoDeRetornoIO == tempo) {
+                p.status = PRONTO;
+                enqueue(&altaPrioridade, p);
+                printf("Processo p%d saiu do IO no instante: %d\n",
+                    p.PID, tempo);
+            }
+            else {
+                // ainda não chegou a hora de retorno
+                enqueue(&IOs, p);
+            }
+        }
 
         // 3) Retornar processo executado para a fila de baixa prioridade - Preempcao
         if (processoEmExecucao) {
@@ -111,17 +128,29 @@ int main(int c, char** argv) {
             enqueue(&baixaPrioridade, *processoEmExecucao);
         }
 
-        
+
         // Executando o proximo processo
         processoEmExecucao = getProximoProcesso(&altaPrioridade, &baixaPrioridade);
         if (processoEmExecucao) {
+            
             // Processo bloqueado 
-            // if (Tempo de bloqueio == tempo)
-            // manda pra fila de IOs
-            // else
-            processoEmExecucao->status = EXECUTANDO;
-            processoEmExecucao->tempoServico -= quantum;
-            printf("Processo p%d executado no instante: %d --- Tempo de servico: %d\n", processoEmExecucao->PID, tempo, processoEmExecucao->tempoServico);
+            if ((processoEmExecucao) 
+               && (processoEmExecucao->contIOs > processoEmExecucao->proxIO)
+               && (processoEmExecucao->tempoChegada + processoEmExecucao->temposIOs[processoEmExecucao->proxIO] == tempo)) {
+                processoEmExecucao->status = BLOQUEADO;
+                processoEmExecucao->tempoDeRetornoIO = temposParaTiposIO[processoEmExecucao->proxIO] + tempo;
+                enqueue(&IOs, *processoEmExecucao);
+                printf("Processo p%d bloqueado no instante = %d\n", processoEmExecucao->PID, tempo);
+                processoEmExecucao->proxIO += 1;
+                processoEmExecucao = NULL;
+            }
+
+
+            else {
+                processoEmExecucao->status = EXECUTANDO;
+                processoEmExecucao->tempoServico -= quantum;
+                printf("Processo p%d executado no instante: %d --- Tempo de servico: %d\n", processoEmExecucao->PID, tempo, processoEmExecucao->tempoServico);
+            }
         }
 
         // Incrementar o tempo

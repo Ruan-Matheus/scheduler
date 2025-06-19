@@ -46,6 +46,8 @@ typedef struct {
     int tempoServico;
     int tempoChegada;
     int contIOs;
+    int proxIO;
+    int tempoDeRetornoIO;
     int temposIOs[MAX_PROCESSOS];
     IO tiposIOs[MAX_PROCESSOS];
     status status;

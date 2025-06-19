@@ -6,9 +6,9 @@
 #define VERMELHO "\033[0;31m"
 #define VERDE "\033[0;32m"
 #define AMARELO "\033[0;33m"
-#define AZUL     "\033[0;34m"
-#define MAGENTA  "\033[0;35m"
-#define RESET   "\033[0m"
+#define AZUL "\033[0;34m"
+#define MAGENTA "\033[0;35m"
+#define RESET "\033[0m"
 
 #define QUANTUM_TEMPO 1
 const char* stringsIO[] = {"DISCO", "FITA", "IMPRESSORA"};

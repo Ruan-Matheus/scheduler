@@ -3,6 +3,12 @@
 #include "fila.h"
 #include "types.h"
 #include "parsing.h"
+#define VERMELHO "\033[0;31m"
+#define VERDE "\033[0;32m"
+#define AMARELO "\033[0;33m"
+#define AZUL     "\033[0;34m"
+#define MAGENTA  "\033[0;35m"
+#define RESET   "\033[0m"
 
 #define QUANTUM_TEMPO 1
 const char* stringsIO[] = {"DISCO", "FITA", "IMPRESSORA"};
@@ -88,7 +94,7 @@ int main(int c, char** argv) {
             if (indice < cont) {
                 if (tempo >= getTempoDeChegada(entradaProcessos, cont, indice)) {
                     PCB novoProcesso = criandoProcesso(entradaProcessos[indice]);                 
-                    printf("Processo p%d criado no instante: %d\n", novoProcesso.PID, tempo);    
+                    printf(AZUL"Processo p%d criado no instante: %d\n"RESET, novoProcesso.PID, tempo);    
                     enqueue(&altaPrioridade, novoProcesso);
                     indice++;
                     processoCriado = true;
@@ -98,7 +104,7 @@ int main(int c, char** argv) {
 
         // Processo finalizado
         if (processoEmExecucao && processoEmExecucao->tempoServico <= 0) {
-            printf("Processo p%d terminado no instante: %d\n", processoEmExecucao->PID, tempo);
+            printf(VERDE "Processo p%d terminado no instante: %d\n" RESET , processoEmExecucao->PID, tempo);
             free(processoEmExecucao);
             processoEmExecucao = NULL; // Adicionar algo mais? Aqui que eu devo dar free no no de PCB?
         }
@@ -112,8 +118,8 @@ int main(int c, char** argv) {
             if (p.tempoDeRetornoIO == tempo) {
                 p.status = PRONTO;
                 enqueue(&altaPrioridade, p);
-                printf("Processo p%d saiu do IO no instante: %d\n",
-                    p.PID, tempo);
+                printf(MAGENTA"Processo p%d saiu do IO no instante: %d\n"RESET,
+                      p.PID, tempo);
             }
             else {
                 // ainda não chegou a hora de retorno
@@ -138,7 +144,7 @@ int main(int c, char** argv) {
         processoEmExecucao->status = EXECUTANDO;
         processoEmExecucao->tempoServico -= quantum;
         processoEmExecucao->tempoCpuAcumulado += quantum;
-        printf("Processo p%d executado no instante: %d --- Tempo de servico: %d\n", processoEmExecucao->PID, tempo, processoEmExecucao->tempoServico);
+        printf(AMARELO"Processo p%d executado no instante: %d --- Tempo de servico: %d\n"RESET, processoEmExecucao->PID, tempo, processoEmExecucao->tempoServico);
 
         // Incrementar o tempo
         tempo += quantum;
@@ -151,7 +157,7 @@ int main(int c, char** argv) {
             processoEmExecucao->tempoDeRetornoIO = temposParaTiposIO[processoEmExecucao->proxIO] + tempo;
             processoEmExecucao->proxIO += 1;
             enqueue(&IOs, *processoEmExecucao);
-            printf("Processo p%d bloqueado no instante: %d --- Tempo de retorno: %d\n", processoEmExecucao->PID, tempo, processoEmExecucao->tempoDeRetornoIO);
+            printf(VERMELHO"Processo p%d bloqueado para IO no instante: %d --- Tempo de retorno: %d\n"RESET, processoEmExecucao->PID, tempo, processoEmExecucao->tempoDeRetornoIO);
             processoEmExecucao = NULL;
         }
     }

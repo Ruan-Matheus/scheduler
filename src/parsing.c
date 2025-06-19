@@ -62,6 +62,7 @@ PCB criandoProcesso(ProcessDescriptor process) {
     p.prioridade = ALTA;
     p.tempoChegada = process.tempoDeChegada;
     p.tempoServico = process.tempoDeServico;
+    p.tempoCpuAcumulado = 0;
     p.contIOs = process.contIOs;
     p.tempoDeRetornoIO = 0;
     p.proxIO = 0;

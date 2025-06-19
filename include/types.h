@@ -44,6 +44,7 @@ typedef struct {
     int PPID;
     int prioridade;
     int tempoServico;
+    int tempoCpuAcumulado;
     int tempoChegada;
     int contIOs;
     int proxIO;

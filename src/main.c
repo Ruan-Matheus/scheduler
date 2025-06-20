@@ -44,6 +44,59 @@ PCB* getProximoProcesso(FILA* altaPrioridade, FILA* baixaPrioridade) {
 }
 
 
+void criandoProcessosParaChegada(int *contProcessCriados, int contProcessLidos, int tempo, ProcessDescriptor* listaEntradaProcessos, FILA* altaPrioridade) {
+    bool processoCriado = true;
+    while (processoCriado) {
+        processoCriado = false;
+        if ((*contProcessCriados) < contProcessLidos) {
+            if (tempo >= getTempoDeChegada(listaEntradaProcessos, contProcessLidos, *contProcessCriados)) {
+                PCB novoProcesso = criandoProcesso(listaEntradaProcessos[*contProcessCriados]);                 
+                printf(AZUL"Processo p%d criado no instante: %d\n"RESET, novoProcesso.PID, tempo);    
+                enqueue(altaPrioridade, novoProcesso);
+                (*contProcessCriados)++;
+                processoCriado = true;
+            }
+        }
+    }
+}
+
+
+void retornaProcessosIOs(FILA* IOs, FILA* altaPrioridade, int tempo) {
+    int tam = tamanhoFila(*IOs);
+    for (int i = 0; i < tam; i++) {
+        PCB p;
+        dequeue(IOs, &p);
+        if (p.tempoDeRetornoIO == tempo) {
+            p.status = PRONTO;
+            enqueue(altaPrioridade, p);
+            printf(MAGENTA"Processo p%d saiu do IO no instante: %d\n"RESET,
+                    p.PID, tempo);
+        }
+        else {
+            // ainda não chegou a hora de retorno
+            enqueue(IOs, p);
+        }
+    }
+}
+
+
+void preemptarProcesso(PCB* processo, FILA* baixaPrioridade) {
+    if (processo) {
+        processo->status = PRONTO;
+        enqueue(baixaPrioridade, *processo);
+    }
+}
+
+
+void finalizarProcesso(PCB** processo, int tempo) {
+    if (*processo && (*processo)->tempoServico <= 0) {
+        printf(VERDE "Processo p%d terminado no instante: %d\n" RESET , (*processo)->PID, tempo);
+        free(*processo);
+        *processo = NULL;
+    }
+}
+
+
 int main(int c, char** argv) {
     int tempo = 0;
     int quantum = QUANTUM_TEMPO;
@@ -86,52 +139,18 @@ int main(int c, char** argv) {
            !vazioFila(altaPrioridade) ||
            !vazioFila(IOs)) {
 
-        
-        // 1) Ainda há processo a serem criados
-        bool processoCriado = true;
-        while (processoCriado) {
-            processoCriado = false;
-            if (indice < cont) {
-                if (tempo >= getTempoDeChegada(entradaProcessos, cont, indice)) {
-                    PCB novoProcesso = criandoProcesso(entradaProcessos[indice]);                 
-                    printf(AZUL"Processo p%d criado no instante: %d\n"RESET, novoProcesso.PID, tempo);    
-                    enqueue(&altaPrioridade, novoProcesso);
-                    indice++;
-                    processoCriado = true;
-                }
-            }
-        }
 
         // Processo finalizado
-        if (processoEmExecucao && processoEmExecucao->tempoServico <= 0) {
-            printf(VERDE "Processo p%d terminado no instante: %d\n" RESET , processoEmExecucao->PID, tempo);
-            free(processoEmExecucao);
-            processoEmExecucao = NULL; // Adicionar algo mais? Aqui que eu devo dar free no no de PCB?
-        }
-
+        finalizarProcesso(&processoEmExecucao, tempo);
+        
+        // 1) Lendo novos processos
+        criandoProcessosParaChegada(&indice, cont, tempo,  entradaProcessos, &altaPrioridade);
 
         // 2) Verificar retornos de I/O 
-        int n = tamanhoFila(IOs);
-        for (int i = 0; i < n; i++) {
-            PCB p;
-            dequeue(&IOs, &p);
-            if (p.tempoDeRetornoIO == tempo) {
-                p.status = PRONTO;
-                enqueue(&altaPrioridade, p);
-                printf(MAGENTA"Processo p%d saiu do IO no instante: %d\n"RESET,
-                      p.PID, tempo);
-            }
-            else {
-                // ainda não chegou a hora de retorno
-                enqueue(&IOs, p);
-            }
-        }
+        retornaProcessosIOs(&IOs, &altaPrioridade, tempo);
 
         // 3) Retornar processo executado para a fila de baixa prioridade - Preempcao
-        if (processoEmExecucao) {
-            processoEmExecucao->status = PRONTO;
-            enqueue(&baixaPrioridade, *processoEmExecucao);
-        }
+        preemptarProcesso(processoEmExecucao, &baixaPrioridade);
 
 
         // Executando o proximo processo

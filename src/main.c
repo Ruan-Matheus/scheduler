@@ -10,7 +10,7 @@
 #define MAGENTA "\033[0;35m"
 #define RESET "\033[0m"
 
-#define QUANTUM_TEMPO 1
+#define QUANTUM_TEMPO 5
 const char* stringsIO[] = {"DISCO", "FITA", "IMPRESSORA"};
 const int temposParaTiposIO[] = {3, 5, 2};
 
@@ -88,12 +88,18 @@ void preemptarProcesso(PCB* processo, FILA* baixaPrioridade) {
 }
 
 
-void finalizarProcesso(PCB** processo, int tempo) {
-    if (*processo && (*processo)->tempoServico <= 0) {
-        printf(VERDE "Processo p%d terminado no instante: %d\n" RESET , (*processo)->PID, tempo);
-        free(*processo);
-        *processo = NULL;
-    }
+void finalizarProcesso(PCB* processo, int tempo) {
+    printf(VERDE "Processo p%d finalizado no instante: %d\n" RESET , processo->PID, tempo);
+    free(processo);
+}
+
+
+void bloquearProcesso(PCB* processo, FILA* IOS, int tempo) {
+    processo->status = BLOQUEADO;
+    processo->tempoDeRetornoIO = temposParaTiposIO[processo->proxIO] + tempo;
+    processo->proxIO += 1;
+    enqueue(IOS, *processo);
+    printf(VERMELHO"Processo p%d bloqueado para IO no instante: %d --- Tempo de retorno: %d\n"RESET, processo->PID, tempo, processo->tempoDeRetornoIO);
 }
 
 
@@ -139,9 +145,6 @@ int main(int c, char** argv) {
            !vazioFila(altaPrioridade) ||
            !vazioFila(IOs)) {
 
-
-        // Processo finalizado
-        finalizarProcesso(&processoEmExecucao, tempo);
         
         // 1) Lendo novos processos
         criandoProcessosParaChegada(&indice, cont, tempo,  entradaProcessos, &altaPrioridade);
@@ -149,34 +152,50 @@ int main(int c, char** argv) {
         // 2) Verificar retornos de I/O 
         retornaProcessosIOs(&IOs, &altaPrioridade, tempo);
 
-        // 3) Retornar processo executado para a fila de baixa prioridade - Preempcao
-        preemptarProcesso(processoEmExecucao, &baixaPrioridade);
-
-
         // Executando o proximo processo
-        processoEmExecucao = getProximoProcesso(&altaPrioridade, &baixaPrioridade);
         if (!processoEmExecucao) {
-            tempo += quantum;
-            continue;
+            processoEmExecucao = getProximoProcesso(&altaPrioridade, &baixaPrioridade);
+            if (!processoEmExecucao) {
+                tempo++;
+                continue;
+            }
         }
         
-        processoEmExecucao->status = EXECUTANDO;
-        processoEmExecucao->tempoServico -= quantum;
-        processoEmExecucao->tempoCpuAcumulado += quantum;
-        printf(AMARELO"Processo p%d executado no instante: %d --- Tempo de servico: %d\n"RESET, processoEmExecucao->PID, tempo, processoEmExecucao->tempoServico);
 
-        // Incrementar o tempo
-        tempo += quantum;
+        printf(AMARELO"Processo p%d iniciando execucao no instante: %d por %d ticks\n"RESET, processoEmExecucao->PID, tempo, quantum);
+        for (int i = 0; i < quantum; i++) {
+            processoEmExecucao->status = EXECUTANDO;
+            processoEmExecucao->tempoServico -= 1;
+            processoEmExecucao->tempoCpuAcumulado += 1;
+
+            // Incrementar o tempo
+            tempo++;
+
+            // Verificando se chegaram processos para criacao, ou processos retornaram de IO
+            criandoProcessosParaChegada(&indice, cont, tempo, entradaProcessos, &altaPrioridade);
+            retornaProcessosIOs(&IOs, &altaPrioridade, tempo);
+
+            // Verificando se o processo foi finalizado
+            if (processoEmExecucao->tempoServico <= 0) {
+                finalizarProcesso(processoEmExecucao, tempo);
+                processoEmExecucao = NULL;
+                break;
+            }
         
+            // Verificando se o processo deve ser bloqueado 
+            if ((processoEmExecucao->contIOs > processoEmExecucao->proxIO)
+            && (processoEmExecucao->tempoCpuAcumulado == processoEmExecucao->temposIOs[processoEmExecucao->proxIO])) {
+                bloquearProcesso(processoEmExecucao, &IOs, tempo);
+                processoEmExecucao = NULL;
+                break;
+            }
+        }
         
-        // Processo bloqueado 
-        if ((processoEmExecucao->contIOs > processoEmExecucao->proxIO)
-           && (processoEmExecucao->tempoCpuAcumulado == processoEmExecucao->temposIOs[processoEmExecucao->proxIO])) {
-            processoEmExecucao->status = BLOQUEADO;
-            processoEmExecucao->tempoDeRetornoIO = temposParaTiposIO[processoEmExecucao->proxIO] + tempo;
-            processoEmExecucao->proxIO += 1;
-            enqueue(&IOs, *processoEmExecucao);
-            printf(VERMELHO"Processo p%d bloqueado para IO no instante: %d --- Tempo de retorno: %d\n"RESET, processoEmExecucao->PID, tempo, processoEmExecucao->tempoDeRetornoIO);
+        // Preempcao
+        if (processoEmExecucao) {
+            printf(AMARELO"Processo p%d terminou fatia no instante: %d --- Tempo de servico restante: %d\n"
+            RESET, processoEmExecucao->PID, tempo, processoEmExecucao->tempoServico);
+            preemptarProcesso(processoEmExecucao, &baixaPrioridade);
             processoEmExecucao = NULL;
         }
     }

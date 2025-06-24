@@ -3,6 +3,7 @@
 #include "fila.h"
 #include "types.h"
 #include "parsing.h"
+
 #define VERMELHO "\033[0;31m"
 #define VERDE "\033[0;32m"
 #define AMARELO "\033[0;33m"
@@ -51,7 +52,7 @@ void criandoProcessosParaChegada(int *contProcessCriados, int contProcessLidos, 
         if ((*contProcessCriados) < contProcessLidos) {
             if (tempo >= getTempoDeChegada(listaEntradaProcessos, contProcessLidos, *contProcessCriados)) {
                 PCB novoProcesso = criandoProcesso(listaEntradaProcessos[*contProcessCriados]);                 
-                printf(AZUL"Processo p%d criado no instante: %d\n"RESET, novoProcesso.PID, tempo);    
+                printf(AZUL"[T:%03d] CRIADO     | P%d chegou ao sistema\n"RESET, tempo, novoProcesso.PID);    
                 enqueue(altaPrioridade, novoProcesso);
                 (*contProcessCriados)++;
                 processoCriado = true;
@@ -69,8 +70,7 @@ void retornaProcessosIOs(FILA* IOs, FILA* altaPrioridade, int tempo) {
         if (p.tempoDeRetornoIO == tempo) {
             p.status = PRONTO;
             enqueue(altaPrioridade, p);
-            printf(MAGENTA"Processo p%d saiu do IO no instante: %d\n"RESET,
-                    p.PID, tempo);
+            printf(MAGENTA"[T:%03d] DESBLOQ    | P%d retornou do I/O [%s]\n"RESET, tempo, p.PID, stringsIO[p.proxIO-1]);
         }
         else {
             // ainda não chegou a hora de retorno
@@ -89,7 +89,7 @@ void preemptarProcesso(PCB* processo, FILA* baixaPrioridade) {
 
 
 void finalizarProcesso(PCB* processo, int tempo) {
-    printf(VERDE "Processo p%d finalizado no instante: %d\n" RESET , processo->PID, tempo);
+    printf(VERDE"[T:%03d] FINALIZ    | P%d terminou execucao\n"RESET, tempo, processo->PID);
     free(processo);
 }
 
@@ -97,9 +97,10 @@ void finalizarProcesso(PCB* processo, int tempo) {
 void bloquearProcesso(PCB* processo, FILA* IOS, int tempo) {
     processo->status = BLOQUEADO;
     processo->tempoDeRetornoIO = temposParaTiposIO[processo->proxIO] + tempo;
+    printf(VERMELHO"[T:%03d] BLOQUEIO   | P%d iniciou I/O [%s] (retorna em T:%03d)\n"RESET, 
+        tempo, processo->PID, stringsIO[processo->proxIO], processo->tempoDeRetornoIO);
     processo->proxIO += 1;
     enqueue(IOS, *processo);
-    printf(VERMELHO"Processo p%d bloqueado para IO no instante: %d --- Tempo de retorno: %d\n"RESET, processo->PID, tempo, processo->tempoDeRetornoIO);
 }
 
 
@@ -136,6 +137,13 @@ int main(int c, char** argv) {
         cont++;    
     }
 
+    // Cabeçalho da simulação
+    printf("\n");
+    printf("===============================================================\n");
+    printf("                    SIMULACAO DO ESCALONADOR                   \n");
+    printf("===============================================================\n");
+    printf("TEMPO  | EVENTO     | DESCRICAO\n");
+    printf("===============================================================\n");
 
     // Loop principal
     int indice = 0;
@@ -162,7 +170,9 @@ int main(int c, char** argv) {
         }
         
 
-        printf(AMARELO"Processo p%d iniciando execucao no instante: %d por %d ticks\n"RESET, processoEmExecucao->PID, tempo, quantum);
+        printf(AMARELO"[T:%03d] EXEC       | P%d iniciou quantum (%d ticks)\n"RESET, 
+               tempo, processoEmExecucao->PID, quantum);
+        
         for (int i = 0; i < quantum; i++) {
             processoEmExecucao->status = EXECUTANDO;
             processoEmExecucao->tempoServico -= 1;
@@ -193,15 +203,17 @@ int main(int c, char** argv) {
         
         // Preempcao
         if (processoEmExecucao) {
-            printf(AMARELO"Processo p%d terminou fatia no instante: %d --- Tempo de servico restante: %d\n"
-            RESET, processoEmExecucao->PID, tempo, processoEmExecucao->tempoServico);
+            printf(AMARELO"[T:%03d] PREEMPT    | P%d perdeu quantum (tempo restante: %d)\n"
+            RESET, tempo, processoEmExecucao->PID, processoEmExecucao->tempoServico);
             preemptarProcesso(processoEmExecucao, &baixaPrioridade);
             processoEmExecucao = NULL;
         }
     }
 
+    printf("===============================================================\n");
+    printf("                      SIMULACAO FINALIZADA                     \n");
+    printf("===============================================================\n");
+
     fclose(entrada);
     return 0;
 }
-
-

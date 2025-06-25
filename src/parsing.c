@@ -34,7 +34,7 @@ ProcessDescriptor parseProcessos(char* buffer) {
     // Campo 2: Tempo de chegada
     if (fields[2]) novo.tempoDeChegada = atoi(fields[2]);
 
-    // Campo 3: Tempos de I/O (agora é seguro usar strtok novamente)
+    // Campo 3: Tempos de I/O
     if (fields[3]) {
         int i = 0;
         char *split = strtok(fields[3], " ");
@@ -45,7 +45,7 @@ ProcessDescriptor parseProcessos(char* buffer) {
         novo.contIOs = i;
     }
 
-    // Campo 4: Tipos de I/O (também seguro usar strtok)
+    // Campo 4: Tipos de I/O 
     if (fields[4] && novo.contIOs > 0) {
         int j = 0;
         char* split = strtok(fields[4], " ");

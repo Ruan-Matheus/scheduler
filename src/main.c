@@ -72,14 +72,12 @@ void retornaProcessosIOs(FILA* IOs, FILA* altaPrioridade, FILA* baixaPrioridade,
 
             int indiceIOExecutado = p.proxIO - 1;
             
-            // Lógica de decisão (já estava correta)
             if (indiceIOExecutado >= 0 && p.tiposIOs[indiceIOExecutado] == DISCO) {
                 enqueue(baixaPrioridade, p);
             } else {
                 enqueue(altaPrioridade, p);
             }
 
-            // CORREÇÃO: Usa o tipo de IO correto para imprimir a mensagem
             IO tipoIOFinalizado = p.tiposIOs[indiceIOExecutado];
             printf(MAGENTA"[T:%03d] DESBLOQ    | P%d retornou do I/O [%s]\n"RESET, tempo, p.PID, stringsIO[tipoIOFinalizado]);
         }
@@ -108,10 +106,7 @@ void finalizarProcesso(PCB* processo, int tempo) {
 void bloquearProcesso(PCB* processo, FILA* IOS, int tempo) {
     processo->status = BLOQUEADO;
     
-    // Pega o tipo de IO correto que será executado
     IO tipoDoIOAtual = processo->tiposIOs[processo->proxIO];
-    
-    // CORREÇÃO: Usa a variável 'tipoDoIOAtual' para obter o tempo e o nome
     processo->tempoDeRetornoIO = temposParaTiposIO[tipoDoIOAtual] + tempo;
     
     printf(VERMELHO"[T:%03d] BLOQUEIO   | P%d iniciou I/O [%s] (retorna em T:%03d)\n"RESET, 
@@ -157,7 +152,6 @@ int main(int c, char** argv) {
         cont++;    
     }
 
-    // Cabeçalho da simulação
     printf("\n");
     printf("===============================================================\n");
     printf("                    SIMULACAO DO ESCALONADOR                   \n");

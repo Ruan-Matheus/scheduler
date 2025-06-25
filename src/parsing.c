@@ -8,47 +8,52 @@ int ppid_counter = 0;
 
 ProcessDescriptor parseProcessos(char* buffer) {
     ProcessDescriptor novo;
+    novo.contIOs = 0; // Sempre inicialize para garantir que não haja lixo
+
+    char *fields[5] = {NULL}; // Array para guardar os 5 campos da linha CSV
+    int field_count = 0;
     char *token;
-    char *split;
-    char *saveptr1;
-    char *saveptr2;
 
-    // Inicializa o contador de I/Os para 0. Essencial.
-    novo.contIOs = 0;
+    // --- FASE 1: Dividir a linha por vírgulas e salvar os ponteiros ---
+    buffer[strcspn(buffer, "\r\n")] = '\0'; // Remove quebra de linha
 
-    buffer[strcspn(buffer, "\r\n")] = '\0';
+    token = strtok(buffer, ",");
+    while (token != NULL && field_count < 5) {
+        fields[field_count++] = token;
+        token = strtok(NULL, ",");
+    }
 
-    // Número do processo
-    token = strtok_r(buffer, ",", &saveptr1);
-    if (token) novo.numeroDoProcesso = atoi(token);
+    // --- FASE 2: Processar cada campo salvo ---
 
-    // Tempo de serviço
-    token = strtok_r(NULL, ",", &saveptr1);
-    if (token) novo.tempoDeServico = atoi(token);
+    // Campo 0: Número do processo
+    if (fields[0]) novo.numeroDoProcesso = atoi(fields[0]);
 
-    // Tempo de chegada
-    token = strtok_r(NULL, ",", &saveptr1);
-    if (token) novo.tempoDeChegada = atoi(token);
+    // Campo 1: Tempo de serviço
+    if (fields[1]) novo.tempoDeServico = atoi(fields[1]);
+    
+    // Campo 2: Tempo de chegada
+    if (fields[2]) novo.tempoDeChegada = atoi(fields[2]);
 
-    // Tempos de IOs
-    token = strtok_r(NULL, ",", &saveptr1);
-    if (token) { // Apenas verifica se o campo existe
+    // Campo 3: Tempos de I/O (agora é seguro usar strtok novamente)
+    if (fields[3]) {
         int i = 0;
-        // O laço interno lida se o campo está vazio ou não
-        for (split = strtok_r(token, " ", &saveptr2); split != NULL; split = strtok_r(NULL, " ", &saveptr2)) {
+        char *split = strtok(fields[3], " ");
+        while (split != NULL) {
             novo.tempoDeIO[i++] = atoi(split);
+            split = strtok(NULL, " ");
         }
         novo.contIOs = i;
     }
 
-    // Tipos de IOs
-    token = strtok_r(NULL, ",", &saveptr1);
-    if (token) { // Apenas verifica se o campo existe
+    // Campo 4: Tipos de I/O (também seguro usar strtok)
+    if (fields[4] && novo.contIOs > 0) {
         int j = 0;
-        for (split = strtok_r(token, " ", &saveptr2); split != NULL; split = strtok_r(NULL, " ", &saveptr2)) {
+        char* split = strtok(fields[4], " ");
+        while (split != NULL) {
             if (strcmp(split, "A") == 0)      novo.tiposDeIO[j++] = DISCO;
             else if (strcmp(split, "B") == 0) novo.tiposDeIO[j++] = FITA_MAGNETICA;
             else if (strcmp(split, "C") == 0) novo.tiposDeIO[j++] = IMPRESSORA;
+            split = strtok(NULL, " ");
         }
     }
 

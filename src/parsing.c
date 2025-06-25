@@ -13,7 +13,7 @@ ProcessDescriptor parseProcessos(char* buffer) {
     char *saveptr1;
     char *saveptr2;
 
-    // Inicializa o contador de I/Os para evitar lixo de memória
+    // Inicializa o contador de I/Os para 0. Essencial.
     novo.contIOs = 0;
 
     buffer[strcspn(buffer, "\r\n")] = '\0';
@@ -32,10 +32,10 @@ ProcessDescriptor parseProcessos(char* buffer) {
 
     // Tempos de IOs
     token = strtok_r(NULL, ",", &saveptr1);
-    // CORREÇÃO: Removida a verificação incorreta '*token != ' ''
-    if (token && token[0] != '\0' && token[0] != ' ') {
+    if (token) { // Apenas verifica se o campo existe
         int i = 0;
-        for (split = strtok_r(token, " ", &saveptr2); split; split = strtok_r(NULL, " ", &saveptr2)) {
+        // O laço interno lida se o campo está vazio ou não
+        for (split = strtok_r(token, " ", &saveptr2); split != NULL; split = strtok_r(NULL, " ", &saveptr2)) {
             novo.tempoDeIO[i++] = atoi(split);
         }
         novo.contIOs = i;
@@ -43,10 +43,9 @@ ProcessDescriptor parseProcessos(char* buffer) {
 
     // Tipos de IOs
     token = strtok_r(NULL, ",", &saveptr1);
-    // CORREÇÃO: Removida a verificação incorreta '*token != ' ''
-    if (token && token[0] != '\0' && token[0] != ' ') {
+    if (token) { // Apenas verifica se o campo existe
         int j = 0;
-        for (split = strtok_r(token, " ", &saveptr2); split; split = strtok_r(NULL, " ", &saveptr2)) {
+        for (split = strtok_r(token, " ", &saveptr2); split != NULL; split = strtok_r(NULL, " ", &saveptr2)) {
             if (strcmp(split, "A") == 0)      novo.tiposDeIO[j++] = DISCO;
             else if (strcmp(split, "B") == 0) novo.tiposDeIO[j++] = FITA_MAGNETICA;
             else if (strcmp(split, "C") == 0) novo.tiposDeIO[j++] = IMPRESSORA;
@@ -55,6 +54,7 @@ ProcessDescriptor parseProcessos(char* buffer) {
 
     return novo;
 }
+
 
 
 

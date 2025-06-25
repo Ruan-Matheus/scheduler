@@ -62,22 +62,33 @@ void criandoProcessosParaChegada(int *contProcessCriados, int contProcessLidos, 
 }
 
 
-void retornaProcessosIOs(FILA* IOs, FILA* altaPrioridade, int tempo) {
+void retornaProcessosIOs(FILA* IOs, FILA* altaPrioridade, FILA* baixaPrioridade, int tempo) {
     int tam = tamanhoFila(*IOs);
     for (int i = 0; i < tam; i++) {
         PCB p;
         dequeue(IOs, &p);
         if (p.tempoDeRetornoIO == tempo) {
             p.status = PRONTO;
-            enqueue(altaPrioridade, p);
-            printf(MAGENTA"[T:%03d] DESBLOQ    | P%d retornou do I/O [%s]\n"RESET, tempo, p.PID, stringsIO[p.proxIO-1]);
+
+            int indiceIOExecutado = p.proxIO - 1;
+            
+            // Lógica de decisão (já estava correta)
+            if (indiceIOExecutado >= 0 && p.tiposIOs[indiceIOExecutado] == DISCO) {
+                enqueue(baixaPrioridade, p);
+            } else {
+                enqueue(altaPrioridade, p);
+            }
+
+            // CORREÇÃO: Usa o tipo de IO correto para imprimir a mensagem
+            IO tipoIOFinalizado = p.tiposIOs[indiceIOExecutado];
+            printf(MAGENTA"[T:%03d] DESBLOQ    | P%d retornou do I/O [%s]\n"RESET, tempo, p.PID, stringsIO[tipoIOFinalizado]);
         }
         else {
-            // ainda não chegou a hora de retorno
             enqueue(IOs, p);
         }
     }
 }
+
 
 
 void preemptarProcesso(PCB* processo, FILA* baixaPrioridade) {
@@ -96,12 +107,21 @@ void finalizarProcesso(PCB* processo, int tempo) {
 
 void bloquearProcesso(PCB* processo, FILA* IOS, int tempo) {
     processo->status = BLOQUEADO;
-    processo->tempoDeRetornoIO = temposParaTiposIO[processo->proxIO] + tempo;
+    
+    // Pega o tipo de IO correto que será executado
+    IO tipoDoIOAtual = processo->tiposIOs[processo->proxIO];
+    
+    // CORREÇÃO: Usa a variável 'tipoDoIOAtual' para obter o tempo e o nome
+    processo->tempoDeRetornoIO = temposParaTiposIO[tipoDoIOAtual] + tempo;
+    
     printf(VERMELHO"[T:%03d] BLOQUEIO   | P%d iniciou I/O [%s] (retorna em T:%03d)\n"RESET, 
-        tempo, processo->PID, stringsIO[processo->proxIO], processo->tempoDeRetornoIO);
+        tempo, processo->PID, stringsIO[tipoDoIOAtual], processo->tempoDeRetornoIO);
+
     processo->proxIO += 1;
     enqueue(IOS, *processo);
 }
+
+
 
 
 int main(int c, char** argv) {
@@ -148,17 +168,16 @@ int main(int c, char** argv) {
     // Loop principal
     int indice = 0;
     while (processoEmExecucao ||
-           indice < cont ||
-           !vazioFila(baixaPrioridade) ||
-           !vazioFila(altaPrioridade) ||
-           !vazioFila(IOs)) {
+        indice < cont ||
+        !vazioFila(baixaPrioridade) ||
+        !vazioFila(altaPrioridade) ||
+        !vazioFila(IOs)) {
 
-        
         // 1) Lendo novos processos
         criandoProcessosParaChegada(&indice, cont, tempo,  entradaProcessos, &altaPrioridade);
 
         // 2) Verificar retornos de I/O 
-        retornaProcessosIOs(&IOs, &altaPrioridade, tempo);
+        retornaProcessosIOs(&IOs, &altaPrioridade, &baixaPrioridade, tempo);
 
         // Executando o proximo processo
         if (!processoEmExecucao) {
@@ -171,7 +190,7 @@ int main(int c, char** argv) {
         
 
         printf(AMARELO"[T:%03d] EXEC       | P%d iniciou quantum (%d ticks)\n"RESET, 
-               tempo, processoEmExecucao->PID, quantum);
+            tempo, processoEmExecucao->PID, quantum);
         
         for (int i = 0; i < quantum; i++) {
             processoEmExecucao->status = EXECUTANDO;
@@ -183,7 +202,7 @@ int main(int c, char** argv) {
 
             // Verificando se chegaram processos para criacao, ou processos retornaram de IO
             criandoProcessosParaChegada(&indice, cont, tempo, entradaProcessos, &altaPrioridade);
-            retornaProcessosIOs(&IOs, &altaPrioridade, tempo);
+            retornaProcessosIOs(&IOs, &altaPrioridade, &baixaPrioridade, tempo);
 
             // Verificando se o processo foi finalizado
             if (processoEmExecucao->tempoServico <= 0) {

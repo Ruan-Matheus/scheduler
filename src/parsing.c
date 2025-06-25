@@ -10,52 +10,57 @@ ProcessDescriptor parseProcessos(char* buffer) {
     ProcessDescriptor novo;
     char *token;
     char *split;
+    char *saveptr1;
+    char *saveptr2;
+
+    // Inicializa o contador de I/Os para evitar lixo de memória
+    novo.contIOs = 0;
+
+    buffer[strcspn(buffer, "\r\n")] = '\0';
 
     // Número do processo
-    token = strtok(buffer, ",");
-    novo.numeroDoProcesso = atoi(token);
+    token = strtok_r(buffer, ",", &saveptr1);
+    if (token) novo.numeroDoProcesso = atoi(token);
 
     // Tempo de serviço
-    token = strtok(NULL, ",");
-    novo.tempoDeServico = atoi(token);
+    token = strtok_r(NULL, ",", &saveptr1);
+    if (token) novo.tempoDeServico = atoi(token);
 
     // Tempo de chegada
-    token = strtok(NULL, ",");
-    novo.tempoDeChegada = atoi(token);
+    token = strtok_r(NULL, ",", &saveptr1);
+    if (token) novo.tempoDeChegada = atoi(token);
 
     // Tempos de IOs
-    token = strtok(NULL, ",");
-    if (token && *token != '\0') {
+    token = strtok_r(NULL, ",", &saveptr1);
+    // CORREÇÃO: Removida a verificação incorreta '*token != ' ''
+    if (token && token[0] != '\0' && token[0] != ' ') {
         int i = 0;
-        split = strtok(token, " ");
-        while (split) {
+        for (split = strtok_r(token, " ", &saveptr2); split; split = strtok_r(NULL, " ", &saveptr2)) {
             novo.tempoDeIO[i++] = atoi(split);
-            split = strtok(NULL, " ");
         }
         novo.contIOs = i;
-    } else {
-        novo.contIOs = 0;
     }
 
     // Tipos de IOs
-    token = strtok(NULL, ",");
-    if (token && *token != '\0') {
-        token[strcspn(token, "\r\n")] = '\0';
+    token = strtok_r(NULL, ",", &saveptr1);
+    // CORREÇÃO: Removida a verificação incorreta '*token != ' ''
+    if (token && token[0] != '\0' && token[0] != ' ') {
         int j = 0;
-        split = strtok(token, " ");
-        while (split) {
+        for (split = strtok_r(token, " ", &saveptr2); split; split = strtok_r(NULL, " ", &saveptr2)) {
             if (strcmp(split, "A") == 0)      novo.tiposDeIO[j++] = DISCO;
-            else if (strcmp(split, "B") == 0)   novo.tiposDeIO[j++] = FITA_MAGNETICA;
-            else if (strcmp(split, "C") == 0)   novo.tiposDeIO[j++] = IMPRESSORA;
-            split = strtok(NULL, " ");
+            else if (strcmp(split, "B") == 0) novo.tiposDeIO[j++] = FITA_MAGNETICA;
+            else if (strcmp(split, "C") == 0) novo.tiposDeIO[j++] = IMPRESSORA;
         }
     }
 
     return novo;
 }
 
+
+
 PCB criandoProcesso(ProcessDescriptor process) {
     PCB p;
+    memset(&p, 0, sizeof(PCB)); 
     p.PPID = ppid_counter++;
     p.PID = pid_counter++;
     p.status = PRONTO;
